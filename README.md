@@ -294,6 +294,9 @@ kmod-usb-uhci kmod-usb2 \
 OpenWRT + MWAN3 
 несколько провайдеров.
 
+(https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3)
+
+
 Ура. Нам провели еще один инет.
 А для USB-4G модема наконец-то появился подходящий тариф.
 
