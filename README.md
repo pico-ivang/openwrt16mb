@@ -291,6 +291,137 @@ kmod-usb-uhci kmod-usb2 \
 на него надо сделать dhcp-клиент интерфейс в настройке сети - и все гут.
 
 
+OpenWRT + MWAN3 
+несколько провайдеров.
+
+Ура. Нам провели еще один инет.
+А для USB-4G модема наконец-то появился подходящий тариф.
+
+Супер.
+
+Диспозиция следующая:
+инет1. pppoe-justlan
+инет2. eth0.3 (vlan-ned) dhcp (и там где-то на выходе из провайдера - nat)
+инет3. usb-hilink. В системе видно как eth1
+
+Задача - Настроить load-balance+failover на первых двух.
+инет3 подымать, если и первый и второй подохли.
+
+(Ну там еще уведомления, то-сё. Их прикрутим по факту как поедем)
+
+opkg update 
+opkg install mwan3
+
+
+part1.1
+
+Мы сделали оба интерфейса через luci-interfaces
+Теперь идем и ставим метрики роутинга на каждый из обоих основных интерфейсах
+
+interfaces -> pppoe-justlan -> advanced -> use gateway metrics = 20
+interfaces -> eth0.3 -> advanced -> use gateway metrics = 10
+
+проверяем, что применилось
+root@OpenWrt:~# ip route show
+default via 10.0.3.2 dev eth1  proto static  src 10.0.3.15  metric 10 
+default via 10.0.4.2 dev eth2  proto static  src 10.0.4.15  metric 20
+
+попингуем, чтоб проверить
+$ ping ya.ru -I eth0.3 -c 3
+PING ya.ru (87.250.250.242): 56 data bytes
+64 bytes from 87.250.250.242: seq=0 ttl=56 time=16.843 ms
+64 bytes from 87.250.250.242: seq=1 ttl=56 time=16.784 ms
+64 bytes from 87.250.250.242: seq=2 ttl=56 time=16.832 ms
+
+$ ping ya.ru -I pppoe-justlan -c 3
+PING ya.ru (87.250.250.242): 56 data bytes
+64 bytes from 87.250.250.242: seq=0 ttl=55 time=11.733 ms
+64 bytes from 87.250.250.242: seq=1 ttl=55 time=11.538 ms
+64 bytes from 87.250.250.242: seq=2 ttl=55 time=11.702 ms
+
+
+
+mcedit /etc/config/mwan3
+config globals 'globals'
+    option enabled '1'
+    option mmx_mask '0x3F00'
+
+config interface 'justlan'
+    option enabled '1'
+    list track_ip '8.8.4.4'
+    list track_ip '8.8.8.8'
+    list track_ip 'ya.ru'
+    option track_method 'ping'
+    option reliability '1'
+    option count '1'
+    option timeout '2'
+    option interval '5'
+    option failure_interval '5'
+    option recovery_interval '5'
+    option down '3'
+    option up '8'
+    option family 'ipv4'
+
+config interface 'ts'
+    option enabled '1'
+    list track_ip '8.8.4.4'
+    list track_ip '8.8.8.8'
+    list track_ip 'ya.ru'
+    option track_method 'ping'
+    option reliability '1'
+    option count '1'
+    option timeout '2'
+    option interval '5'
+    option failure_interval '5'
+    option recovery_interval '5'
+    option down '3'
+    option up '8'
+    option family 'ipv4'
+
+config member 'wan1'
+    option interface 'justlan'
+    option metric '1'
+    option weight '3'
+
+config member 'wan2'
+    option interface 'ts'
+    option metric '2'
+    option weight '3'
+
+config policy 'balanced'
+        list use_member 'wan1'
+        list use_member 'wan2'
+
+config rule 'https'
+    option sticky '1'
+    option dest_port '443'
+    option proto 'tcp'
+    option use_policy 'balanced'
+
+config rule 'default_rule_v4'
+    option dest_ip '0.0.0.0/0'
+    option use_policy 'balanced'
+    option family 'ipv4'
+
+
+
+/etc/init.d/mwan3 start
+
+/etc/init.d/mwan3 enable
+
+
+mwan3 interfaces
+mwan3 status
+
+
+Подергаем провода - посмотрим, как все чотенько отрабатывает.
+Значца, у мну было такое глючок.
+У мну не подымался обратно PPPoE, пока я не поставил "LCP echo failure threshold" =40, а LCP echo interval = 5
+После этого ppp стал чотко понимать, что туннель подох - ставил его на авторестарт, рестартовал, когда в проводах вновь появлялся тырнет.
+Короч, заработало авторекавери
+
+Теперь примотаем USB-модем.
+А потом и уведомлятельную автоматику.
 
 Далее прикрутим флешку.
 [ это пока в работе]
