@@ -49,6 +49,9 @@ dd if=wdr4300_orig_8mb_full.bin of=art.bin bs=64k skip=127
 
 (т.е. мы пропускаем 127 блоков по 64к, и dd-шим весь оставшийся один 128 блок размером 64к)
 
+это если ART - на один диапазон wifi
+Если два - ннада б два блока по 64
+
 Отлично.
 ART и фуллфлешЪ - на флешку и в сервант за стекло.
 
@@ -100,6 +103,65 @@ dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > wdr4300-16Mb-fullflash.bin
 dd if=uboot-new.bin of=wdr4300-16Mb-fullflash.bin conv=notrunc
 dd if=openwrt-ath79-generic-tplink_tl-wdr3600-16m-squashfs-sysupgrade.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=2 conv=notrunc
 dd if=art.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=255 conv=notrunc
+
+
+есть вариантец сборщика 
+#!/bin/bash
+
+#read -p "enter initial 8mb fullflash [8fullflash.bin]-> " 8fullflash
+#read -p "enter u-boot 16mb patched [uboot16.bin]-> " uboot16
+
+# orig fullflash
+#8fullflash = "8fullflash.bin"
+# патченный
+#uboot16 = "uboot16.bin"
+
+
+echo "вынимаю ART"
+# это - если wifi однотактный
+#dd if=8fullflash.bin of=art.bin bs=64k skip=127
+# так - если wdr4300 v1.3 с синими ламочками - у него, походу, арт двойной
+dd if=8fullflash.bin of=art.bin bs=64k skip=126
+
+read -p "норм?"
+echo "вынимаю старый uboot"
+dd if=8fullflash.bin of=uboot.bin bs=64k count=2
+
+read -p "норм?"
+echo "дербанил старый u-boot"
+dd if=uboot.bin of=macaddr.bin bs=1 skip=130048 count=6
+dd if=uboot.bin of=model.bin bs=1 skip=130304 count=8
+dd if=uboot.bin of=pin.bin bs=1 skip=130560 count=8
+
+read -p "норм?"
+echo "делаем новый u-boot"
+dd if=/dev/zero bs=64k count=2 | tr '\000' '\377' > uboot_new.bin
+
+read -p "норм?"
+echo "собираем новый u-boot"
+dd if=uboot16.bin of=uboot_new.bin conv=notrunc
+dd if=macaddr.bin of=uboot_new.bin bs=1 count=6 seek=130048 conv=notrunc
+dd if=model.bin of=uboot_new.bin bs=1 count=8 seek=130304 conv=notrunc
+dd if=pin.bin of=uboot_new.bin bs=1 count=8 seek=130560 conv=notrunc
+
+read -p "норм?"
+echo "собираем 16fullflash"
+dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > 16fullflash.bin
+dd if=uboot_new.bin of=16fullflash.bin conv=notrunc
+dd if=openwrt-sysupgrade.bin of=16fullflash.bin bs=64k seek=2 conv=notrunc
+
+read -p "норм?"
+# если арт маленький
+#dd if=art.bin of=16fullflash.bin bs=64k seek=255 conv=notrunc
+# если арт большой
+dd if=art.bin of=16fullflash.bin bs=64k seek=254 conv=notrunc
+
+read -p "готово"
+
+
+exit
+
+
 
 супер. Теперь надеваем 16Мб флешку на программатор и льем в него новый фуллфлешЪ
 
