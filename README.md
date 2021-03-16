@@ -362,10 +362,9 @@ kmod-usb-uhci kmod-usb2 \
 kmod-usb-storage
 kmod-usb-storage-extras
 kmod-scsi-core
-
 block-mount 
-
 kmod-fs-ext4  
+e2fsprogs
 kmod-fs-vfat 
 kmod-nls-cp437 
 kmod-nls-iso8859-1
