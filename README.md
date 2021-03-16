@@ -339,7 +339,9 @@ ar7240> httpd
 
 lte-модем HUAWEI 827F, прошитый в hilink (режим ndis) подключился так:
 
-opkg install usb-modeswitch kmod-usb-net-cdc-ether
+opkg install 
+usb-modeswitch \
++ kmod-usb-net-cdc-ether
 
 после этого модем стал видиться как сетевой интерфейс eth1 
 на него надо сделать dhcp-клиент интерфейс в настройке сети - и все гут.
@@ -347,11 +349,18 @@ opkg install usb-modeswitch kmod-usb-net-cdc-ether
 
 модем ZTE MF823D, прошитый в hilink (режим ndis) подключился так
 
-opkg install usb-modeswitch \
-kmod-usb-net-rndis kmod-usb-acm kmod-usb-core \
-kmod-usb-ohci kmod-usb-serial comgt \
-kmod-usb-serial-option kmod-usb-storage \
-kmod-usb-uhci kmod-usb2 \
+opkg install 
++ usb-modeswitch \
++ kmod-usb-net-rndis \
++ kmod-usb-acm \
++ kmod-usb-core \
++ kmod-usb-ohci \
++ kmod-usb-serial \
++ comgt \
++ kmod-usb-serial-option \
++ kmod-usb-storage \
++ kmod-usb-uhci \
++ kmod-usb2 \
 
 модем стал видиться как сетевой интерфейс usb0.
 на него надо сделать dhcp-клиент интерфейс в настройке сети - и все гут.
@@ -359,15 +368,15 @@ kmod-usb-uhci kmod-usb2 \
 
 Далее прикрутим флешку.
 [ это пока в работе]
-kmod-usb-storage
-kmod-usb-storage-extras
-kmod-scsi-core
-block-mount 
-kmod-fs-ext4  
-e2fsprogs
-kmod-fs-vfat 
-kmod-nls-cp437 
-kmod-nls-iso8859-1
++ kmod-usb-storage
++ kmod-usb-storage-extras
++ kmod-scsi-core
++ block-mount 
++ kmod-fs-ext4  
++ e2fsprogs
++ kmod-fs-vfat 
++ kmod-nls-cp437 
++ kmod-nls-iso8859-1
 
 
 OpenWRT + MWAN3 
