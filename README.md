@@ -246,6 +246,22 @@ nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdrxxxx.dtsi
 
 сохраняем.
 
+Далее.
+Нужно сделать, чтобы образ собирался не под 8Мб, а под 16М - иначе, если вы через menuconfig наберете софта больше, чем на 8 - при сборке получите ошибку "overlay is too big- не могу запихать все, что вы тута понавыбрали"
+
+mcedit openwrt/target/linux/ath79/image/generic-tp-link.mk
+
+ищем модель маршрутника - 3600 или 4300 
+define Device/tplink_tl-wdr3600-v1
+  $(Device/tplink-8mlzma)
+  
+  вторую строчку меняем на 16mlzma
+define Device/tplink_tl-wdr3600-v1
+  $(Device/tplink-16mlzma)
+
+теперь при сборке openwrt будет считать, что нужно собрать образ не более 16Мб
+
+
 
 # ставим таргет  - tplink 4300 v1
 make menuconfig
