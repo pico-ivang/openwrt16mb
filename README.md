@@ -270,6 +270,10 @@ How do I compile all OpenWrt packages?
 CONFIG_ALL=y + make V=99 IGNORE_ERRORS=m
 
 
+conpile the way it made by owrt team
+
+wget https://downloads.openwrt.org/releases/19.07.0/targets/ath79/generic/config.buildinfo  -O .config
+
 # ставим таргет  - tplink 4300 v1
 make menuconfig
 
