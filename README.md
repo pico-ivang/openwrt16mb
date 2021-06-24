@@ -265,6 +265,10 @@ define Device/tplink_tl-wdr3600-v1
 Поэтому если в $(Device стоит 8m без lzma - стоит сделать 16m без lzma
 
 
+How do I compile all OpenWrt packages?
+
+CONFIG_ALL=y + make V=99 IGNORE_ERRORS=m
+
 
 # ставим таргет  - tplink 4300 v1
 make menuconfig
