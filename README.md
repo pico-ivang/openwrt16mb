@@ -265,14 +265,23 @@ define Device/tplink_tl-wdr3600-v1
 Поэтому если в $(Device стоит 8m без lzma - стоит сделать 16m без lzma
 
 
-How do I compile all OpenWrt packages?
-
-CONFIG_ALL=y + make V=99 IGNORE_ERRORS=m
-
 
 conpile the way it made by owrt team
 
 wget https://downloads.openwrt.org/releases/19.07.0/targets/ath79/generic/config.buildinfo  -O .config
+
+
+How do I compile all OpenWrt packages?
+
+# mcedit .config
+
+CONFIG_ALL=y 
+
+can be done via menuconfig
+Global build settings - Select all userspace packages by default	
+  
+
+
 
 # ставим таргет  - tplink 4300 v1
 make menuconfig
@@ -293,9 +302,11 @@ make download
 scripts/diffconfig.sh > mydiffconfig (save your changes in the text file mydiffconfig).
 
 # start the build process.
-make
 
+DO NOT RUN THIS FROM ROOT!!
+Run this from usial user
 
+make -j<number_of_cores> V=s IGNORE_ERRORS="n m"	
 
 
 Получилось в in/targets/ath79/generic -factory.bin и -sysupgrade.bin
