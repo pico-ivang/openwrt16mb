@@ -214,8 +214,7 @@ cd openwrt
 с ядром посвежее, кароч
 
 # тянем фиды && устанавливаем фиды
-./scripts/feeds update -a  && \
-./scripts/feeds install -a
+./scripts/feeds update -a  && ./scripts/feeds install -a
 
 
 теперь нужно поменять мап разделов в образе флешки на версию на 16Мб.
@@ -306,7 +305,10 @@ scripts/diffconfig.sh > mydiffconfig (save your changes in the text file mydiffc
 DO NOT RUN THIS FROM ROOT!!
 Run this from usial user
 
-make -j<number_of_cores> V=s IGNORE_ERRORS="n m"	
+make -j<number_of_cores+1> V=s IGNORE_ERRORS="n m"	
+
+так вообще почтитай тут
+https://openwrt.org/docs/guide-developer/build-system/use-buildsystem
 
 
 Получилось в in/targets/ath79/generic -factory.bin и -sysupgrade.bin
