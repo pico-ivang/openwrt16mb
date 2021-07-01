@@ -102,6 +102,7 @@ dd if=pin.bin of=uboot-new.bin bs=1 count=8 seek=130560 conv=notrunc
 dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > wdr4300-16Mb-fullflash.bin
 dd if=uboot-new.bin of=wdr4300-16Mb-fullflash.bin conv=notrunc
 dd if=openwrt-ath79-generic-tplink_tl-wdr3600-16m-squashfs-sysupgrade.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=2 conv=notrunc
+# внимательно! seek 255 - у нас 16Мб флеш образ. это 256 блоков по 64кб.
 dd if=art.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=255 conv=notrunc
 
 
@@ -153,7 +154,7 @@ dd if=openwrt-sysupgrade.bin of=16fullflash.bin bs=64k seek=2 conv=notrunc
 read -p "норм?"
 # если арт маленький
 #dd if=art.bin of=16fullflash.bin bs=64k seek=255 conv=notrunc
-# если арт большой
+# если арт большой - вот про вот это надо будет по-подробнее, про большой арт я встретился в 4300-blu
 dd if=art.bin of=16fullflash.bin bs=64k seek=254 conv=notrunc
 
 read -p "готово"
