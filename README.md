@@ -260,6 +260,7 @@ flashrom после записи проверяет, правильно ли о�
 	perl-File-Copy perl-FindBin diffutils which
 
 **для alpine (yeah docker babe)**
+
 	apk add asciidoc bash bc binutils bzip2 cdrkit coreutils diffutils \
 	findutils flex g++ gawk gcc gettext git grep intltool libxslt \
 	linux-headers make ncurses-dev openssl-dev patch perl python2-dev \
