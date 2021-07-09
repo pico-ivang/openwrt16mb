@@ -1,7 +1,7 @@
 openwrt 16mb spi flash on wdr3600/4300 
 ======================================
 
-> Часть аппаратная
+Часть вводная
 ------------------
 
 
@@ -29,157 +29,185 @@ openwrt 16mb spi flash on wdr3600/4300
 16Мбайт - не сильно много. В идеале бы конечно еще больше - тут кашу маслом не испортить.
 Но все равно, драматически место не увеличить, а головняка добавится.
 
-*за вменяемые деньги мне удалось найти только 25q256, да и то в корпусе не sop-8, а sop-16.
-sop-16 на наш маршрутник, по идее, станет - выводы для этого есть.
-Но 25q256 уже имеет немного другую адресацию и потребует углубленного изучения сырцов openWrt для адаптации.
+*за вменяемые деньги мне удалось найти только w25q256, да и то в корпусе не sop-8, а sop-16.
+sop-16 на наш маршрутник, по идее, станет, благо выводы для этого есть.
+Но w25q256 уже имеет немного другую адресацию и потребует углубленного изучения сырцов openWrt для адаптации.*
+Пока отложим в сторону.
 
-Короче говоря, пока будем делать 16Мб + usb-флешка для потенциального перетыка на нее overlayFS.
+
+Часть аппаратная
+------------------
+
+Будем делать 16Мб + usb-флешка для потенциального перетыка на нее overlayFS.
 
 Сначала сдуваем оригинальную флешЪ.
 Втыкаем в программатор. И аккураттненько, с дублированием куда-ньть, сливаем с нее полный дамп.
+
+Оперировать будем блоками по 64к.
+
+у tp-link прекрасно простая разблюдовка данных
+
+**первые 128кб - загрузчик**
+стоковый загрузчик весит килобайт немного меньше, чем 128=2x64. Но все равно, у него все кратно блокам по 64кб.
+
+**последние 64кб - раздел ART**
+
+**все, что последине - это сама прошивка**
+
 Основной лут - это последние 64кб флешки. Там содержится раздел ART (atheros radio test).
 Там содержится калибровачная инфа для wifi. 
-Если его нет - wifi на маршрутизаторе работать не будет.
-art, по идее, у всех разный. Поэтому его прям бекапим, как зеницу ока.
+Если его нет - wifi на маршрутизаторе работать не будет. 
+art, по идее, у всех разный. Поэтому ***бекапим* его прямо как зеницу ока.**
 
-Сливаем фуллфлешЪ.
-sudo flashrom -p ch341a_spi -r wdr4300_orig_8mb_full.bin -V
+> Сливаем фуллфлешЪ.
+
+	sudo flashrom -p ch341a_spi -r wdr4300_orig_8mb_full.bin -V
 
 Файл 8Мб.
 Это 8 388 608 байт.
 Это 128 блоков по 64кб (по 65 536 байт)
 
 Вынем оттуда ART-раздел в отдельный файл.
-dd if=wdr4300_orig_8mb_full.bin of=art.bin bs=64k skip=127
 
-(т.е. мы пропускаем 127 блоков по 64к, и dd-шим весь оставшийся один 128 блок размером 64к)
+	dd if=wdr4300_orig_8mb_full.bin of=wdr4300_art.bin bs=64k skip=127
+
+(т.е. мы пропускаем 127 блоков по 64к, и dd-шим весь оставшийся один блок №128 размером 64к)
 
 это если ART - на один диапазон wifi
 Если два - ннада б два блока по 64
+**но это не точно**
 
 Отлично.
-ART и фуллфлешЪ - на флешку и в сервант за стекло.
+ART и фуллфлешЪ - на флешку и в сервант за стекло, в хрустальную вазочку для чеснока.
 
 
 Наша новая флешка - 16Мб.
 Это 16 777 216 байт.
 Либо  256 блоков по 64кб.
-И последним блоком должен быть ART раздел.
+И последним блоком №256 должен быть ART раздел, полученный нами на предыдущем шаге.
 
 А первыми двумя блоками по 64кб, т.е. первые 128кб, первые 131 072 байта,
 должен быть модифицированный загрузчик, который умеет 16Мб флешки.
 u-boot с патчем. Либо китайский breed тут подойдут.
 
+В hex загрузчик расположен по таким адресам:
+
+	0x000000000000-0x000000020000 : "u-boot"
+
 Я нагуглил патченный u-boot.
-uboot-mod.bin
+**uboot16.bin**
 
-вынем оригинальный u-boot из оригинальной прошивки - там содержится MAC-адрес
+Давайте вынем оригинальный u-boot из оригинальной прошивки - там содержатся MAC-адреса и PIN для WDS.
 
-dd if=wdr4300_orig_8mb_full.bin of=uboot.bin bs=64k count=2
+	dd if=wdr4300_orig_8mb_full.bin of=uboot-orig.bin bs=64k count=2
 
 Отлично.
-
 Теперь соберем фуллфлешЪ с openWRT для флешки на 16Мб.
-Сначала uboot:
+
+**Собираем модифицированный uboot16: **
 
 из стока вынимаем:
-dd if=uboot.bin of=macaddr.bin bs=1 skip=130048 count=6
-dd if=uboot.bin of=model.bin bs=1 skip=130304 count=8
-dd if=uboot.bin of=pin.bin bs=1 skip=130560 count=8
 
-dd if=/dev/zero bs=64k count=2 | tr '\000' '\377' > uboot-new.bin
+	dd if=uboot-orig.bin of=macaddr.bin bs=1 skip=130048 count=6
+	dd if=uboot-orig.bin of=model.bin bs=1 skip=130304 count=8
+	dd if=uboot-orig.bin of=pin.bin bs=1 skip=130560 count=8
 
-dd if=uboot_mod.bin of=uboot-new.bin conv=notrunc
-dd if=macaddr.bin of=uboot-new.bin bs=1 count=6 seek=130048 conv=notrunc
-dd if=model.bin of=uboot-new.bin bs=1 count=8 seek=130304 conv=notrunc
-dd if=pin.bin of=uboot-new.bin bs=1 count=8 seek=130560 conv=notrunc
+Готовим файл для нового uboot16
 
-собрали uboot-new.bin
+	dd if=/dev/zero bs=64k count=2 | tr '\000' '\377' > uboot16.bin
 
-Для первого раза возьмем готовую сборку openWrt - она не будет уметь все 16Мб нового флеша.
-Но мы запустим так. А потом соберем openWrt из сырцов под наши нужды.
+	dd if=uboot_mod.bin of=uboot16.bin conv=notrunc
+	dd if=macaddr.bin of=uboot16.bin bs=1 count=6 seek=130048 conv=notrunc
+	dd if=model.bin of=uboot16.bin bs=1 count=8 seek=130304 conv=notrunc
+	dd if=pin.bin of=uboot16.bin bs=1 count=8 seek=130560 conv=notrunc
+	
+**собрали uboot16.bin**
 
-Короч, качаем какая там версия подходит openwrt-..-sysupgrade.bin
+Для первого раза возьмем готовую сборку openWrt - она не будет уметь использовать все 16Мб нового флеша.
+Но мы запустимся пока так. А потом соберем openWrt из сырцов с правильной картой разделов под наши нужды.
 
-Собираем фуллфлешЪ
+Короч, качаем какая там версия для нашего маршрутизатора подходит *openwrt-..-sysupgrade.bin*
 
+**Собираем фуллфлешЪ**
 
-dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > wdr4300-16Mb-fullflash.bin
-dd if=uboot-new.bin of=wdr4300-16Mb-fullflash.bin conv=notrunc
-dd if=openwrt-ath79-generic-tplink_tl-wdr3600-16m-squashfs-sysupgrade.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=2 conv=notrunc
-# внимательно! seek 255 - у нас 16Мб флеш образ. это 256 блоков по 64кб.
-dd if=art.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=255 conv=notrunc
+	dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > wdr4300-16Mb-fullflash.bin
+	dd if=uboot-new.bin of=wdr4300-16Mb-fullflash.bin conv=notrunc
+	dd if=openwrt-ath79-generic-tplink_tl-wdr3600-16m-squashfs-sysupgrade.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=2 conv=notrunc
+
+**внимательно! seek 255 - у нас 16Мб флеш образ. это 256 блоков по 64кб.**
+
+	dd if=art.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=255 conv=notrunc
 
 
 есть вариантец сборщика 
-#!/bin/bash
 
-#read -p "enter initial 8mb fullflash [8fullflash.bin]-> " 8fullflash
-#read -p "enter u-boot 16mb patched [uboot16.bin]-> " uboot16
+	!/bin/bash
 
-# orig fullflash
-#8fullflash = "8fullflash.bin"
-# патченный
-#uboot16 = "uboot16.bin"
+	read -p "enter initial 8mb fullflash [8fullflash.bin]-> " 8fullflash
+	read -p "enter u-boot 16mb patched [uboot16.bin]-> " uboot16
 
+	orig fullflash
+	##8fullflash = "8fullflash.bin"
+	
+	##патченный
+	#uboot16 = "uboot16.bin"
 
-echo "вынимаю ART"
-# это - если wifi однотактный
-#dd if=8fullflash.bin of=art.bin bs=64k skip=127
-# так - если wdr4300 v1.3 с синими ламочками - у него, походу, арт двойной
-dd if=8fullflash.bin of=art.bin bs=64k skip=126
+	echo "вынимаю ART"
+	# это - если wifi однотактный
+	#dd if=8fullflash.bin of=art.bin bs=64k skip=127
+	# так - если wdr4300 v1.3 с синими ламочками - у него, походу, арт двойной
+	dd if=8fullflash.bin of=art.bin bs=64k skip=126
 
-read -p "норм?"
-echo "вынимаю старый uboot"
-dd if=8fullflash.bin of=uboot.bin bs=64k count=2
+	read -p "норм?"
+	echo "вынимаю старый uboot"
+	dd if=8fullflash.bin of=uboot.bin bs=64k count=2
 
-read -p "норм?"
-echo "дербанил старый u-boot"
-dd if=uboot.bin of=macaddr.bin bs=1 skip=130048 count=6
-dd if=uboot.bin of=model.bin bs=1 skip=130304 count=8
-dd if=uboot.bin of=pin.bin bs=1 skip=130560 count=8
+	read -p "норм?"
+	echo "дербанил старый u-boot"
+	dd if=uboot.bin of=macaddr.bin bs=1 skip=130048 count=6
+	dd if=uboot.bin of=model.bin bs=1 skip=130304 count=8
+	dd if=uboot.bin of=pin.bin bs=1 skip=130560 count=8
 
-read -p "норм?"
-echo "делаем новый u-boot"
-dd if=/dev/zero bs=64k count=2 | tr '\000' '\377' > uboot_new.bin
+	read -p "норм?"
+	echo "делаем новый u-boot"
+	dd if=/dev/zero bs=64k count=2 | tr '\000' '\377' > uboot_new.bin
 
-read -p "норм?"
-echo "собираем новый u-boot"
-dd if=uboot16.bin of=uboot_new.bin conv=notrunc
-dd if=macaddr.bin of=uboot_new.bin bs=1 count=6 seek=130048 conv=notrunc
-dd if=model.bin of=uboot_new.bin bs=1 count=8 seek=130304 conv=notrunc
-dd if=pin.bin of=uboot_new.bin bs=1 count=8 seek=130560 conv=notrunc
+	read -p "норм?"
+	echo "собираем новый u-boot"
+	dd if=uboot16.bin of=uboot_new.bin conv=notrunc
+	dd if=macaddr.bin of=uboot_new.bin bs=1 count=6 seek=130048 conv=notrunc
+	dd if=model.bin of=uboot_new.bin bs=1 count=8 seek=130304 conv=notrunc
+	dd if=pin.bin of=uboot_new.bin bs=1 count=8 seek=130560 conv=notrunc
 
-read -p "норм?"
-echo "собираем 16fullflash"
-dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > 16fullflash.bin
-dd if=uboot_new.bin of=16fullflash.bin conv=notrunc
-dd if=openwrt-sysupgrade.bin of=16fullflash.bin bs=64k seek=2 conv=notrunc
+	read -p "норм?"
+	echo "собираем 16fullflash"
+	dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > 16fullflash.bin
+	dd if=uboot_new.bin of=16fullflash.bin conv=notrunc
+	dd if=openwrt-sysupgrade.bin of=16fullflash.bin bs=64k seek=2 conv=notrunc
 
-read -p "норм?"
-# если арт маленький
-#dd if=art.bin of=16fullflash.bin bs=64k seek=255 conv=notrunc
-# если арт большой - вот про вот это надо будет по-подробнее, про большой арт я встретился в 4300-blu
-dd if=art.bin of=16fullflash.bin bs=64k seek=254 conv=notrunc
+	read -p "норм?"
+	# если арт маленький
+	#dd if=art.bin of=16fullflash.bin bs=64k seek=255 conv=notrunc
+	# если арт большой - вот про вот это надо будет по-подробнее, про большой арт я встретился в 4300-blu
+	dd if=art.bin of=16fullflash.bin bs=64k seek=254 conv=notrunc
 
-read -p "готово"
+	read -p "готово"
 
-
-exit
+	exit
 
 
 
 супер. Теперь надеваем 16Мб флешку на программатор и льем в него новый фуллфлешЪ
 
-sudo flashrom -p ch341a_spi -w wdr4300-16Mb-fullflash.bin -V
+	sudo flashrom -p ch341a_spi -w wdr4300-16Mb-fullflash.bin -V
 
 flashrom после записи проверяет, правильно ли он записал.
-В моем случае автоматическая проверка не проходила.
+В моем случае автоматическая проверка не проходила, валилась с ошибкой.
 Поэтому я разнес это на два действия.
 Сперва пишу без проверки, потом сверяю с файлом то, что записалось.
 
-sudo flashrom -p ch341a_spi -n -w wdr4300-16Mb-fullflash.bin -V
-sudo flashrom -p ch341a_spi -v wdr4300-16Mb-fullflash.bin -V
+	sudo flashrom -p ch341a_spi -n -w wdr4300-16Mb-fullflash.bin -V
+	sudo flashrom -p ch341a_spi -v wdr4300-16Mb-fullflash.bin -V
 
 Паяем на маршрутник, подтыкаемся к uart-консоли - смотрим как стартует.
 
@@ -187,37 +215,49 @@ sudo flashrom -p ch341a_spi -v wdr4300-16Mb-fullflash.bin -V
 
 В конце будет что-то типа:
 
-jffs2_scan_eraseblock(): End of filesystem marker found at 0x10000
-[    9.728657] jffs2_build_filesystem(): unlocking the mtd device...
-[    9.728710] done.
-[    9.736951] jffs2_build_filesystem(): erasing all blocks after the end marker... 
-[   57.265196] done.
-[   57.274803] jffs2: notice: (483) jffs2_build_xattr_subsystem: complete building xattr subsystem, 0 of xdatum (0 unchecked, 0 orphan) and 0 of xref (0 dead, 0 orphan) found.
-[   57.291806] mount_root: overlay filesystem has not been fully initialized yet
-[   57.303130] mount_root: switching to jffs2 overlay
-[   57.332760] overlayfs: upper fs does not support tmpfile.
+	jffs2_scan_eraseblock(): End of filesystem marker found at 0x10000
+	[    9.728657] jffs2_build_filesystem(): unlocking the mtd device...
+	[    9.728710] done.
+	[    9.736951] jffs2_build_filesystem(): erasing all blocks after the end marker... 
+	[   57.265196] done.
+	[   57.274803] jffs2: notice: (483) jffs2_build_xattr_subsystem: complete building xattr subsystem, 0 of xdatum (0 unchecked, 0 orphan) and 0 of xref (0 dead, 0 	orphan) found.
+	[   57.291806] mount_root: overlay filesystem has not been fully initialized yet
+	[   57.303130] mount_root: switching to jffs2 overlay
+	[   57.332760] overlayfs: upper fs does not support tmpfile.
 
 это означит, что все ок.
 
 
-Если старт произошел, все прокатило, ip a показывает устройства wlan, а df -h говорит, что overlay где-то 3.5Мб -
+Если старт произошел, все прокатило, ip a показывает устройства, в т.ч. wlan0/1, а df -h говорит, что overlay где-то 3.5Мб -
 то все отлично, можно переходить к запилу своей версии openWRT.
 
 
-# подготавливаем сборочный цех
+Часть программная
+------------------
 
-apt install build-essential ccache ecj fastjar file g++ gawk \
-gettext git java-propose-classpath libelf-dev libncurses5-dev \
-libncursesw5-dev libssl-dev python python2.7-dev python3 unzip wget \
-python3-distutils python3-setuptools rsync subversion swig time \
-xsltproc zlib1g-dev
+подготавливаем сборочный цех
 
-# тянем с гита
-git clone https://github.com/openwrt/openwrt/ -b openwrt-19.07
-cd openwrt 
+**Для debian-ubuntu**
 
-кстати. там-то появилась уже 21.02 
-с ядром посвежее, кароч
+	apt install build-essential ccache ecj fastjar file g++ gawk \
+	gettext git java-propose-classpath libelf-dev libncurses5-dev \
+	libncursesw5-dev libssl-dev python python2.7-dev python3 unzip wget \
+	python3-distutils python3-setuptools rsync subversion swig time \
+	xsltproc zlib1g-dev
+
+**для redhat/centos/oraclelinux**
+
+	dnf --skip-broken install bash-completion bzip2 gcc gcc-c++ git \
+	make ncurses-devel patch perl-Data-Dumper perl-Thread-Queue python2 \
+	python3 rsync tar unzip wget perl-base perl-File-Compare \
+	perl-File-Copy perl-FindBin diffutils which
+
+**тянем с гита* сырцы*
+
+	git clone https://github.com/openwrt/openwrt/ -b openwrt-19.07
+	cd openwrt 
+
+кстати. там-то появилась уже 21.02, с ядром посвежее, но мы пока по классике
 
 # тянем фиды && устанавливаем фиды
 ./scripts/feeds update -a  && ./scripts/feeds install -a
