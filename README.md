@@ -1,8 +1,9 @@
 openwrt 16mb spi flash on wdr3600/4300 
 ======================================
 
+
 Часть вводная
-------------------
+=============
 
 
 Предположим, надыбали мы маршрутизатор.
@@ -15,7 +16,7 @@ openwrt 16mb spi flash on wdr3600/4300
 
 Но. Стоковая прошивка на нем - __фигня__. Да еще, похоже, со стоковым __http(s)-бекдором__.
 
-**Будем менять на openWrt**.
+# Будем менять на OpenWrt
 
 Искаропки на wdr4300/wdr3600 идет флешка w25q64 на 8 мбайт.
 Маловато.
@@ -36,7 +37,7 @@ sop-16 на наш маршрутник, по идее, станет, благо
 
 
 Часть аппаратная
-------------------
+================
 
 Будем делать 16Мб + usb-флешка для потенциального перетыка на нее overlayFS.
 
@@ -47,19 +48,20 @@ sop-16 на наш маршрутник, по идее, станет, благо
 
 у tp-link прекрасно простая разблюдовка данных
 
-**первые 128кб - загрузчик**
+# первые 128кб - загрузчик
 стоковый загрузчик весит килобайт немного меньше, чем 128=2x64. Но все равно, у него все кратно блокам по 64кб.
 
-**последние 64кб - раздел ART**
+# последние 64кб - раздел ART
 
-**все, что последине - это сама прошивка**
+# все, что последине - это сама прошивка
 
 Основной лут - это последние 64кб флешки. Там содержится раздел ART (atheros radio test).
 Там содержится калибровачная инфа для wifi. 
 Если его нет - wifi на маршрутизаторе работать не будет. 
 art, по идее, у всех разный. Поэтому ***бекапим* его прямо как зеницу ока.**
 
-> Сливаем фуллфлешЪ.
+Сливаем фуллфлешЪ.
+------------------
 
 	sudo flashrom -p ch341a_spi -r wdr4300_orig_8mb_full.bin -V
 
@@ -68,6 +70,7 @@ art, по идее, у всех разный. Поэтому ***бекапим* 
 Это 128 блоков по 64кб (по 65 536 байт)
 
 Вынем оттуда ART-раздел в отдельный файл.
+------------------------------------------
 
 	dd if=wdr4300_orig_8mb_full.bin of=wdr4300_art.bin bs=64k skip=127
 
@@ -95,7 +98,7 @@ u-boot с патчем. Либо китайский breed тут подойду�
 	0x000000000000-0x000000020000 : "u-boot"
 
 Я нагуглил патченный u-boot.
-**uboot16.bin**
+# uboot16.bin
 
 Давайте вынем оригинальный u-boot из оригинальной прошивки - там содержатся MAC-адреса и PIN для WDS.
 
@@ -104,7 +107,8 @@ u-boot с патчем. Либо китайский breed тут подойду�
 Отлично.
 Теперь соберем фуллфлешЪ с openWRT для флешки на 16Мб.
 
-**Собираем модифицированный uboot16: **
+Собираем модифицированный uboot16:
+----------------------------------
 
 из стока вынимаем:
 
@@ -121,25 +125,26 @@ u-boot с патчем. Либо китайский breed тут подойду�
 	dd if=model.bin of=uboot16.bin bs=1 count=8 seek=130304 conv=notrunc
 	dd if=pin.bin of=uboot16.bin bs=1 count=8 seek=130560 conv=notrunc
 	
-**собрали uboot16.bin**
+# собрали uboot16.bin
 
 Для первого раза возьмем готовую сборку openWrt - она не будет уметь использовать все 16Мб нового флеша.
 Но мы запустимся пока так. А потом соберем openWrt из сырцов с правильной картой разделов под наши нужды.
 
 Короч, качаем какая там версия для нашего маршрутизатора подходит *openwrt-..-sysupgrade.bin*
 
-**Собираем фуллфлешЪ**
+Собираем фуллфлешЪ
+-------------------
 
 	dd if=/dev/zero bs=1M count=16 | tr '\000' '\377' > wdr4300-16Mb-fullflash.bin
 	dd if=uboot-new.bin of=wdr4300-16Mb-fullflash.bin conv=notrunc
 	dd if=openwrt-ath79-generic-tplink_tl-wdr3600-16m-squashfs-sysupgrade.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=2 conv=notrunc
 
-**внимательно! seek 255 - у нас 16Мб флеш образ. это 256 блоков по 64кб.**
+# внимательно! seek 255 - у нас 16Мб флеш образ. это 256 блоков по 64кб.
 
 	dd if=art.bin of=wdr4300-16Mb-fullflash.bin bs=64k seek=255 conv=notrunc
 
 
-есть вариантец сборщика 
+есть вариантец сборщика  (gotsta check dat von der kurrent)
 
 	!/bin/bash
 
@@ -233,11 +238,12 @@ flashrom после записи проверяет, правильно ли о�
 
 
 Часть программная
-------------------
+=================
 
 подготавливаем сборочный цех
+----------------------------
 
-**Для debian-ubuntu**
+# для debian-ubuntu
 
 	apt install build-essential ccache ecj fastjar file g++ gawk \
 	gettext git java-propose-classpath libelf-dev libncurses5-dev \
@@ -245,31 +251,51 @@ flashrom после записи проверяет, правильно ли о�
 	python3-distutils python3-setuptools rsync subversion swig time \
 	xsltproc zlib1g-dev
 
-**для redhat/centos/oraclelinux**
+# для redhat/centos/oraclelinux
 
 	dnf --skip-broken install bash-completion bzip2 gcc gcc-c++ git \
 	make ncurses-devel patch perl-Data-Dumper perl-Thread-Queue python2 \
 	python3 rsync tar unzip wget perl-base perl-File-Compare \
 	perl-File-Copy perl-FindBin diffutils which
 
-**тянем с гита* сырцы*
+# для alpine (yeah docker babe)
+	apk add asciidoc bash bc binutils bzip2 cdrkit coreutils diffutils \
+	findutils flex g++ gawk gcc gettext git grep intltool libxslt \
+	linux-headers make ncurses-dev openssl-dev patch perl python2-dev \
+	python3-dev rsync tar unzip util-linux wget zlib-dev subversion \
+	ca-certificates
+
+
+тянем с гита сырцы
+-------------------
 
 	git clone https://github.com/openwrt/openwrt/ -b openwrt-19.07
 	cd openwrt 
 
-кстати. там-то появилась уже 21.02, с ядром посвежее, но мы пока по классике
 
-# тянем фиды && устанавливаем фиды
-./scripts/feeds update -a  && ./scripts/feeds install -a
+кстати. там появилась уже 21.02, с ядром посвежее, но мы пока по классике
 
+
+тянем фиды && устанавливаем фиды
+--------------------------------
+
+	./scripts/feeds update -a  && ./scripts/feeds install -a
+
+
+патчим dst
+--------------------
 
 теперь нужно поменять мап разделов в образе флешки на версию на 16Мб.
 
-nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdr4300-v1.dts
+	nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdr4300-v1.dts
+
 Он, оказывается, использует файл
-nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdr4300.dtsi
+
+	nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdr4300.dtsi
+
 Он, оказывается, использует файл
-nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdrxxxx.dtsi
+	
+	nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdrxxxx.dtsi
 
 в нем ищем  блок, где описано, до какого адреса будет раздел с firmware
 и откуда начнется art
@@ -286,87 +312,100 @@ nano openwrt/target/linux/ath79/dts/ar9344_tplink_tl-wdrxxxx.dtsi
 				read-only;
 			};
 
-меняем конец  раздела firmware с 0x7d0000 на 0xfd0000
-начало art с 0x7f0000 на 0xff0000
+# меняем конец  раздела firmware с 0x7d0000 на 0xfd0000
+# начало art с 0x7f0000 на 0xff0000
 
 сохраняем.
 
-Далее.
+
+патчим firmware size
+--------------------
+
 Нужно сделать, чтобы образ собирался не под 8Мб, а под 16М - иначе, если вы через menuconfig наберете софта больше, чем на 8 - при сборке получите ошибку "overlay is too big- не могу запихать все, что вы тута понавыбрали"
 
 mcedit openwrt/target/linux/ath79/image/generic-tp-link.mk
 
 ищем модель маршрутника - 3600 или 4300 
-define Device/tplink_tl-wdr3600-v1
-  $(Device/tplink-8mlzma)
+
+	define Device/tplink_tl-wdr3600-v1
+	  	$(Device/tplink-**8mlzma**)
   
-  вторую строчку меняем на 16mlzma
-define Device/tplink_tl-wdr3600-v1
-  $(Device/tplink-16mlzma)
+вторую строчку меняем на 16mlzma
 
-теперь при сборке openwrt будет считать, что нужно собрать образ не более 16Мб
+	define Device/tplink_tl-wdr3600-v1
+  		$(Device/tplink-**16mlzma**)
 
-обратите внимание, если будете пилить это под другой какой аппарат - не все норм жуют lzma
-Поэтому если в $(Device стоит 8m без lzma - стоит сделать 16m без lzma
+теперь при сборке openwrt будет считать, что нужно собрать образ размером 16Мб
 
-
-
-conpile the way it made by owrt team
-
-wget https://downloads.openwrt.org/releases/19.07.0/targets/ath79/generic/config.buildinfo  -O .config
+обратите внимание, если будете пилить это под другой какой аппарат - не все аппараты норм жуют lzma
+Поэтому если в $(Device стоит 8m без lzma - **стоит сделать 16m без lzma**
 
 
-How do I compile all OpenWrt packages?
+# compile the way it made by owrt team
 
-# mcedit .config
+	wget https://downloads.openwrt.org/releases/19.07.0/targets/ath79/generic/config.buildinfo  -O .config
 
-CONFIG_ALL=y 
+
+# How do I compile all OpenWrt packages?
+
+	mcedit .config
+	...
+	CONFIG_ALL=y 
 
 can be done via menuconfig
-Global build settings - Select all userspace packages by default	
+# Global build settings --> Select all userspace packages by default
   
-
 
 
 # ставим таргет  - tplink 4300 v1
-make menuconfig
+
+	make menuconfig
+
 
 # для таргета делается default config
-make defconfig
-и
-# make kernel_menuconfig (optional :!: it's highly likely that kernel modules from the repositories won't work when you make changes here).
+
+	make defconfig
+
 
 # конфигуряй
-make menuconfig
 
-тут можно поправить dts файл
+	make menuconfig
+
+
 # можно сначала выкачать все, что будет нужно - чтоб могло в многопоточную сборку
-make download
+
+	make download
 
 
-scripts/diffconfig.sh > mydiffconfig (save your changes in the text file mydiffconfig).
+# можно сцедить diff
+	
+	scripts/diffconfig.sh > mydiffconfig (save your changes in the text file mydiffconfig).
 
-# start the build process.
+# компиляй
 
-DO NOT RUN THIS FROM ROOT!!
+***DO NOT RUN THIS FROM ROOT!!***
 Run this from usial user
 
-make -j<number_of_cores+1> V=s IGNORE_ERRORS="n m"	
+	make -j<number_of_cores+1> V=s IGNORE_ERRORS="n m"
+оно же 
 
-так вообще почтитай тут
-https://openwrt.org/docs/guide-developer/build-system/use-buildsystem
+	make -j<nproc+1> V=s IGNORE_ERRORS="n m"
+
+> так вообще почтитай тут
+> https://openwrt.org/docs/guide-developer/build-system/use-buildsystem
 
 
-Получилось в in/targets/ath79/generic -factory.bin и -sysupgrade.bin
+# Получилось в in/targets/ath79/generic -factory.bin и -sysupgrade.bin
 
-супер. Можно вкидывать в маршрутник в /tmp 
+супер. **Можно вкидывать в маршрутник в /tmp**
 и делать на него sysupgrade без сохранения конфигов.
 
 
 Оно прошъется, перезагрузится, - проверяем df -h overlay
 
 
-Через модифицированный u-boot тоже можно шиться 
+Через модифицированный u-boot тоже можно шиться
+-----------------------------------------------
 
 Подключив заранее консолью в uart, сразу после старта будет момент 
 "Hit any key to stop autoboot:"
@@ -418,55 +457,61 @@ ar7240> httpd
 Если собираем openWRt с сырцов - получим свой набор пакетов.
 Ядро получится кастомное. И на собранное с сырцов openwrt может получать отлуп из-за несовпадения версии накомпиленного
 
+
 короч. на компе куда-ньть надо nginx'ом выставить накомпиленную репу.
 и подоткнуть ее в /etc/opkg/distfeeds.conf вместо оригинального таргета
 
-Далее
+Прикрутим USB-модемы
+--------------------
 
-lte-модем HUAWEI 827F, прошитый в hilink (режим ndis) подключился так:
+lte-модем **HUAWEI 827F**, прошитый в hilink (режим ndis) подключился так:
 
-opkg install 
-usb-modeswitch \
-+ kmod-usb-net-cdc-ether
+	opkg install \
+	usb-modeswitch \
+	kmod-usb-net-cdc-ether
 
 после этого модем стал видиться как сетевой интерфейс eth1 
 на него надо сделать dhcp-клиент интерфейс в настройке сети - и все гут.
 
 
-модем ZTE MF823D, прошитый в hilink (режим ndis) подключился так
+модем **ZTE MF823D**, прошитый в hilink (режим ndis) подключился так
 
-opkg install 
-+ usb-modeswitch \
-+ kmod-usb-net-rndis \
-+ kmod-usb-acm \
-+ kmod-usb-core \
-+ kmod-usb-ohci \
-+ kmod-usb-serial \
-+ comgt \
-+ kmod-usb-serial-option \
-+ kmod-usb-storage \
-+ kmod-usb-uhci \
-+ kmod-usb2 \
+	opkg install \
+	usb-modeswitch \
+	kmod-usb-net-rndis \
+	kmod-usb-acm \
+	kmod-usb-core \
+	kmod-usb-ohci \
+	kmod-usb-serial \
+	comgt \
+	kmod-usb-serial-option \
+	kmod-usb-storage \
+	kmod-usb-uhci \
+	kmod-usb2
 
 модем стал видиться как сетевой интерфейс usb0.
 на него надо сделать dhcp-клиент интерфейс в настройке сети - и все гут.
 
 
-Далее прикрутим флешку.
+Прикрутим флешку.
+-----------------
+
 [ это пока в работе]
-+ kmod-usb-storage
-+ kmod-usb-storage-extras
-+ kmod-scsi-core
-+ block-mount 
-+ kmod-fs-ext4  
-+ e2fsprogs
-+ kmod-fs-vfat 
-+ kmod-nls-cp437 
-+ kmod-nls-iso8859-1
+
+	opkg install \
+	kmod-usb-storage \
+	kmod-usb-storage-extras \
+	kmod-scsi-core \
+	block-mount \
+	kmod-fs-ext4 \
+	e2fsprogs \
+	kmod-fs-vfat \
+	kmod-nls-cp437 \
+	kmod-nls-iso8859-1
 
 
-OpenWRT + MWAN3 
-несколько провайдеров.
+OpenWRT + MWAN3 = несколько провайдеров.
+----------------------------------------
 
 (https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3)
 
@@ -486,116 +531,125 @@ OpenWRT + MWAN3
 
 (Ну там еще уведомления, то-сё. Их прикрутим по факту как поедем)
 
-opkg update 
-opkg install mwan3
+	opkg update 
+	opkg install mwan3
 
 
-part1.1
+# part1.1
 
 Мы сделали оба интерфейса через luci-interfaces
 Теперь идем и ставим метрики роутинга на каждый из обоих основных интерфейсах
 
-interfaces -> pppoe-justlan -> advanced -> use gateway metrics = 20
-interfaces -> eth0.3 -> advanced -> use gateway metrics = 10
+	interfaces -> pppoe-justlan -> advanced -> use gateway metrics = 20
+	interfaces -> eth0.3 -> advanced -> use gateway metrics = 10
 
 проверяем, что применилось
-root@OpenWrt:~# ip route show
-default via 10.0.3.2 dev eth1  proto static  src 10.0.3.15  metric 10 
-default via 10.0.4.2 dev eth2  proto static  src 10.0.4.15  metric 20
+
+	root@OpenWrt:~# ip route show
+	default via 10.0.3.2 dev eth1  proto static  src 10.0.3.15  metric 10 
+	default via 10.0.4.2 dev eth2  proto static  src 10.0.4.15  metric 20
 
 попингуем, чтоб проверить
-$ ping ya.ru -I eth0.3 -c 3
-PING ya.ru (87.250.250.242): 56 data bytes
-64 bytes from 87.250.250.242: seq=0 ttl=56 time=16.843 ms
-64 bytes from 87.250.250.242: seq=1 ttl=56 time=16.784 ms
-64 bytes from 87.250.250.242: seq=2 ttl=56 time=16.832 ms
 
-$ ping ya.ru -I pppoe-justlan -c 3
-PING ya.ru (87.250.250.242): 56 data bytes
-64 bytes from 87.250.250.242: seq=0 ttl=55 time=11.733 ms
-64 bytes from 87.250.250.242: seq=1 ttl=55 time=11.538 ms
-64 bytes from 87.250.250.242: seq=2 ttl=55 time=11.702 ms
+	$ ping ya.ru -I eth0.3 -c 3
+	PING ya.ru (87.250.250.242): 56 data bytes
+	64 bytes from 87.250.250.242: seq=0 ttl=56 time=16.843 ms
+	64 bytes from 87.250.250.242: seq=1 ttl=56 time=16.784 ms
+	64 bytes from 87.250.250.242: seq=2 ttl=56 time=16.832 ms
 
-
-
-mcedit /etc/config/mwan3
-config globals 'globals'
-    option enabled '1'
-    option mmx_mask '0x3F00'
-
-config interface 'justlan'
-    option enabled '1'
-    list track_ip '8.8.4.4'
-    list track_ip '8.8.8.8'
-    list track_ip 'ya.ru'
-    option track_method 'ping'
-    option reliability '1'
-    option count '1'
-    option timeout '2'
-    option interval '5'
-    option failure_interval '5'
-    option recovery_interval '5'
-    option down '3'
-    option up '8'
-    option family 'ipv4'
-
-config interface 'ts'
-    option enabled '1'
-    list track_ip '8.8.4.4'
-    list track_ip '8.8.8.8'
-    list track_ip 'ya.ru'
-    option track_method 'ping'
-    option reliability '1'
-    option count '1'
-    option timeout '2'
-    option interval '5'
-    option failure_interval '5'
-    option recovery_interval '5'
-    option down '3'
-    option up '8'
-    option family 'ipv4'
-
-config member 'wan1'
-    option interface 'justlan'
-    option metric '1'
-    option weight '3'
-
-config member 'wan2'
-    option interface 'ts'
-    option metric '2'
-    option weight '3'
-
-config policy 'balanced'
-        list use_member 'wan1'
-        list use_member 'wan2'
-
-config rule 'https'
-    option sticky '1'
-    option dest_port '443'
-    option proto 'tcp'
-    option use_policy 'balanced'
-
-config rule 'default_rule_v4'
-    option dest_ip '0.0.0.0/0'
-    option use_policy 'balanced'
-    option family 'ipv4'
+	$ ping ya.ru -I pppoe-justlan -c 3
+	PING ya.ru (87.250.250.242): 56 data bytes
+	64 bytes from 87.250.250.242: seq=0 ttl=55 time=11.733 ms
+	64 bytes from 87.250.250.242: seq=1 ttl=55 time=11.538 ms
+	64 bytes from 87.250.250.242: seq=2 ttl=55 time=11.702 ms
 
 
+пилим конфиг на переключатор MWAN3
 
-/etc/init.d/mwan3 start
+	mcedit /etc/config/mwan3
+	config globals 'globals'
+	option enabled '1'
+	option mmx_mask '0x3F00'
 
-/etc/init.d/mwan3 enable
+	config interface 'justlan'
+		option enabled '1'
+		list track_ip '8.8.4.4'
+		list track_ip '8.8.8.8'
+		list track_ip 'ya.ru'
+		option track_method 'ping'
+		option reliability '1'
+		option count '1'
+		option timeout '2'
+		option interval '5'
+		option failure_interval '5'
+		option recovery_interval '5'
+		option down '3'
+		option up '8'
+		option family 'ipv4'
+
+	config interface 'ts'
+    	option enabled '1'
+    	list track_ip '8.8.4.4'
+    	list track_ip '8.8.8.8'
+    	list track_ip 'ya.ru'
+    	option track_method 'ping'
+    	option reliability '1'
+    	option count '1'
+    	option timeout '2'
+    	option interval '5'
+    	option failure_interval '5'
+    	option recovery_interval '5'
+    	option down '3'
+    	option up '8'
+    	option family 'ipv4'
+
+	config member 'wan1'
+		option interface 'justlan'
+		option metric '1'
+		option weight '3'
+
+	config member 'wan2'
+		option interface 'ts'
+		option metric '2'
+		option weight '3'
+
+	config policy 'balanced'
+		list use_member 'wan1'
+		list use_member 'wan2'
+
+	config rule 'https'
+		option sticky '1'
+		option dest_port '443'
+		option proto 'tcp'
+		option use_policy 'balanced'
+
+	config rule 'default_rule_v4'
+		option dest_ip '0.0.0.0/0'
+		option use_policy 'balanced'
+		option family 'ipv4'
 
 
-mwan3 interfaces
-mwan3 status
+Стартуем
+
+	/etc/init.d/mwan3 start
+
+	/etc/init.d/mwan3 enable
+
+
+	mwan3 interfaces
+	mwan3 status
 
 
 Подергаем провода - посмотрим, как все чотенько отрабатывает.
-Значца, у мну было такое глючок.
-У мну не подымался обратно PPPoE, пока я не поставил "LCP echo failure threshold" =40, а LCP echo interval = 5
+
+*Значца, у мну было такое глючок.
+У мну не подымался обратно PPPoE, пока я не поставил **LCP echo failure threshold = 40**, а **LCP echo interval = 5**
 После этого ppp стал чотко понимать, что туннель подох - ставил его на авторестарт, рестартовал, когда в проводах вновь появлялся тырнет.
-Короч, заработало авторекавери
+Короч, заработало авторекавери*
 
 
-А еще далее - прикрутим apcupsd, потом usb-звуковуху, потом, если повезет с дровами - usb-видеокарту.
+А еще далее - прикрутим **apcupsd**, потом **usb-звуковуху**, потом, если повезет с дровами - **usb-видеокарту**.
+
+И обязательно нужно вкомпилять втуда cross-compile node.js
+Это будет непросто, ибо float поддержки в камнях на этих маршрутниках нет. Надо будет прям покрутить.
+
