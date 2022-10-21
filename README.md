@@ -275,7 +275,14 @@ flashrom после записи проверяет, правильно ли о�
 	gettext git java-propose-classpath libelf-dev libncurses5-dev \
 	libncursesw5-dev libssl-dev python python2.7-dev python3 unzip wget \
 	python3-distutils python3-setuptools rsync subversion swig time \
-	xsltproc zlib1g-dev libcap-dev  llvm-12-dev clang-12
+	xsltproc zlib1g-dev libcap-dev llvm-12-dev clang-12
+
+
+это нужно сделать чтобы сработала проверка на qosify в openwrt-22
+
+	ln -s /usr/bin/clang-12 /usr/bin/clang
+	mkdir /home/egi/openwrt22/staging_dir/host/llvm-bpf/bin/
+	sudo ln -s /usr/bin/clang /home/egi/openwrt22/staging_dir/host/llvm-bpf/bin/clang
 
 
 **для redhat/centos/oraclelinux**
