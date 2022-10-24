@@ -521,7 +521,7 @@ ar7240> httpd
 
 Внимание
 --------
-Если собираем openWRt с сырцов - получим свой набор пакетов.
+Если собираем openWRT с сырцов - получим свой набор пакетов.
 Ядро получится кастомное. И на собранное с сырцов openwrt может получать отлуп из-за несовпадения версии накомпиленного
 
 короч. на компе куда-ньть надо nginx'ом выставить накомпиленную репу.
@@ -529,45 +529,82 @@ ar7240> httpd
 
 Как подоткнуть оф репку opkg для работы с кастомным билдом - напишу как узнаю
 
+как костыль - можно **bin/packages** и **bin/targets** выставить по http при помощи nginx.  
+А в **/etc/opkg.conf** закомментировать `option Signature_check`.  
+Иначе оно бородит, ругаясь про signature check в Packages.sig
+
+Кстати, перегенерить в своей кастомной сборке Packages.gz и Packages.sig можно так  
+
+    make package/intex
+
 
 Прикрутим USB-модемы
 --------------------
 
+
+
+для поддержки **usb-wifi китайского донгла 3g/4g->wifi+rndis**
+
+    opkg install \  
+        kmod-usb-net-cdc-eem \  
+        kmod-usb-net-cdc-ether \  
+        kmod-usb-net-cdc-mbim \  
+        kmod-usb-net-cdc-ncm \  
+        kmod-usb-net-cdc-subset \  
+        kmod-usb-net-dm9601-ether \  
+        kmod-usb-net-hso \  
+        kmod-usb-net-ipheth \  
+        kmod-usb-net-kalmia \  
+        kmod-usb-net-kaweth \  
+        kmod-usb-net-mcs7830 \  
+        kmod-usb-net-pegasus \  
+        kmod-usb-net-qmi-wwan \  
+        kmod-usb-net-sierrawireless \  
+        kmod-usb-net-smsc95xx \  
+        kmod-usb-net-rndis \  
+        umbim    
+
+Весьма вероятно, что не вся пачка нужна.
+Надо бы потестить, что из этого потенциально не нужно
+
+Тут появится интерфейс usb0.  
+Когда USB-девайс появился в системе, надо сделать на него сетевой интерфейс и добавить в группу WAN на фаере, чтоб оно заработало
+
+
 lte-модем **HUAWEI 827F**, прошитый в hilink (режим ndis) подключился так:
 
 	opkg install \
-	usb-modeswitch \
-	kmod-usb-net-cdc-ether
+	        usb-modeswitch \
+	        kmod-usb-net-cdc-ether
 
-после этого модем стал видиться как сетевой интерфейс eth1 
-на него надо сделать dhcp-клиент интерфейс в настройке сети - и все гут.
+***usb-modeswitch** в openwrt_22 называется по-другом*
+
+после этого модем стал видиться как сетевой интерфейс eth1.  
+Когда eth1 появился в системе, надо сделать на него сетевой интерфейс и добавить в группу WAN на фаере, чтоб оно заработало
 
 
 модем **ZTE MF823D**, прошитый в hilink (режим ndis) подключился так
 
 	opkg install \
-	usb-modeswitch \
-	kmod-usb-net-rndis \
-	kmod-usb-acm \
-	kmod-usb-core \
-	kmod-usb-ohci \
-	kmod-usb-serial \
-	comgt \
-	kmod-usb-serial-option \
-	kmod-usb-storage \
-	kmod-usb-uhci \
-	kmod-usb2
+    	usb-modeswitch \
+    	kmod-usb-net-rndis \
+    	kmod-usb-acm \
+    	kmod-usb-core \
+    	kmod-usb-ohci \
+    	kmod-usb-serial \
+    	comgt \
+    	kmod-usb-serial-option \
+    	kmod-usb-storage \
+    	kmod-usb-uhci \
+    	kmod-usb2
 
-модем стал видиться как сетевой интерфейс usb0.
-на него надо сделать dhcp-клиент интерфейс в настройке сети - и все гут.
+***usb-modeswitch** в openwrt_22 называется по-другом*
 
-
-*usb-wifi китайский, который выглядит как usb-модем, но по факту - мать от китайского смартфона, и умеет работать чисто из розетки, раздавая инет по своему же вайфаю*
-
-	opkg install kmod-usb-net-rndis
-
-
+модем стал видеться как сетевой интерфейс usb0.  
 Когда USB-девайс появился в системе, надо сделать на него сетевой интерфейс и добавить в группу WAN на фаере, чтоб оно заработало
+
+
+
 
 Прикрутим UAB-флешку.
 -----------------
