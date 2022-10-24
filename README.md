@@ -746,14 +746,28 @@ OpenWRT + MWAN3 = несколько провайдеров.
 
 
 
-А еще далее - прикрутим **apcupsd**, потом **usb-звуковуху**, потом, если повезет с дровами - **usb-видеокарту**.
-
-И обязательно нужно вкомпилять втуда cross-compile node.js
-
-Это будет непросто, ибо float поддержки в камнях на этих маршрутниках нет. Надо будет прям покрутить.
+###### А еще далее - прикрутим **apcupsd**, потом **usb-звуковуху**, потом, если повезет с дровами - **usb-видеокарту**.
 
 
-Надо б еще запилить тему **ImageBuilder**
+###  NodeJS
+
+Это будет непросто, ибо FP (floating point) поддержки в камнях на этих маршрутниках нет. Надо будет прям покрутить.
+Вроде бы есть решение  
+https://forum.openwrt.org/t/how-to-enable-mips-fpu-emulator-when-compiling/80997/5
+
+Если коротенько - то нужно включить **FP-emulator**    
+Говорят, если нагрузка на FP небольшая - он норм работает  
+
+ЧоКак:
+
+    make menuconfig
+    # (finish and close menuconfig)
+    echo "CONFIG_KERNEL_MIPS_FP_SUPPORT=y" >> .config
+    # (do not open menuconfig)
+    make # start compiling OpenWrt
+
+
+### Надо б еще запилить тему **ImageBuilder**
 
 очень удобно - за ночь скомпилять ВЕСЬ openWRT в модуля. 
 
