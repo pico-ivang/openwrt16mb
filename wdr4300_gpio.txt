@@ -1,0 +1,18 @@
+Just to let you know... It seems that JTAG, in TP-Link TL-WDR3600/43x0, is disabled by default in original U-Boot (or there is a mistake in AR9344 datasheet which has leaked?), so there are 4 available GPIOs which could be used for any purpose.
+
+GPIOs numbers are (should be) the same like in WR841Nv8 (they are also pulled-down in the same way I suppose):
+http://www.tech-blog.pl/wordpress/wp-content/uploads/2013/07/tp-link_tl-wr841nv8_jtagb.jpg
+
+You should pay attention for socket orientation - in WDR3600/43x0 the JTAG socket is
+inverted by 180 degrees in comparison to WR841Nv8. I haven't yet checked also purpose of the last pins in socket (11-14).
+
+For example, how to make GPIO2 to be an output and set it high (OpenWrt AA/Gargoyle):
+
+echo "2" > /sys/class/gpio/export
+echo "out" > /sys/class/gpio/gpio2/direction
+echo 1 > /sys/class/gpio/gpio2/value
+
+cat /sys/kernel/debug/gpio
+GPIOs 0-22, ath79:
+ gpio-2   (sysfs               ) out hi
+[...]
