@@ -71,7 +71,8 @@ dd if=art.bin of=fullflash16.bin bs=64k seek=255 conv=notrunc
 echo "норм?"
 
 echo "сборку 16Мб фулфлеша - готово."
-read -p " шейте fullflash16.bin"
+echo" шьем  fullflash16.bin ? [flashrom -p ch341a_spi -w fullflash16.bin -V]"
+flashrom -p ch341a_spi -w fullflash16.bin -V
 
 
 exit
