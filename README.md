@@ -618,6 +618,80 @@ lte-модем **HUAWEI 827F**, прошитый в hilink (режим ndis) п�
 	kmod-nls-iso8859-1
 
 
+Перетащим overlay на флешку, чтоб больше места в /root было
+--------------------------
+
+Разделы на флешке готовите сами.
+
+Чтоб на всякий случай замонтируем оригинальный mtd-раздел с /rootfs в /rwm
+
+    DEVICE="$(sed -n -e "/\s\/overlay\s.*$/s///p" /etc/mtab)"
+    uci -q delete fstab.rwm
+    uci set fstab.rwm="mount"
+    uci set fstab.rwm.device="${DEVICE}"
+    uci set fstab.rwm.target="/rwm"
+    uci commit fstab
+
+либо руками
+
+Сперва выясняем у mtd, кто где /root
+
+`grep -e rootfs_data /proc/mtd`
+
+    mtd4: 00a10000 00010000 "rootfs_data"
+
+запишем
+
+`mcedit /etc/config/fstab`
+
+    config mount 'rwm'
+        option device '/dev/mtdblock4'
+        option target '/rwm'
+
+#### `mount -a` тут не сработает. вероятно, сработает при перезагрузке  
+
+    
+
+А кто у нас флешка?
+
+`block info`
+
+    /dev/mtdblock3: UUID="3c933fa2-461a3e9c-e2fc716c-8dde8a0a" VERSION="4.0" MOUNT="/rom" TYPE="squashfs"       
+    /dev/mtdblock4: MOUNT="/overlay" TYPE="jffs2"  
+    /dev/sda1: UUID="47e4c5f4-e163-44d2-b9a4-4b534aa7ba7a" VERSION="1.0" MOUNT="/mnt" TYPE="ext4"     
+
+флешка /dev/sda1.
+
+Копируем /root
+
+    mkdir -p /tmp/cproot
+    mount --bind /overlay /tmp/cproot
+    mount /dev/sda1 /mnt
+    tar -C /tmp/cproot -cvf - . | tar -C /mnt -xf -
+    umount /tmp/cproot /mnt
+
+теперь скажем, чтоб монтировал /overlay с флешки
+
+    DEVICE="/dev/sda1"
+    eval $(block info ${DEVICE} | grep -o -e "UUID=\S*")
+    uci -q delete fstab.overlay
+    uci set fstab.overlay="mount"
+    uci set fstab.overlay.uuid="${UUID}"
+    uci set fstab.overlay.target="/overlay"
+    uci commit fstab
+
+или руками
+
+`mcedit /etc/config/fstab`
+
+    config mount 'overlay'
+        option uuid '47e4c5f4-e163-44d2-b9a4-4b534aa7ba7a'
+        option target '/overlay'
+
+Все. го в ребут   
+
+    reboot
+
 
 OpenWRT + MWAN3 = несколько провайдеров.
 ----------------------------------------
