@@ -542,23 +542,23 @@ ar7240> httpd
 для поддержки **usb-wifi китайского донгла 3g/4g->wifi+rndis**
 
     opkg install \  
-        kmod-usb-net-cdc-eem \  
-        kmod-usb-net-cdc-ether \  
-        kmod-usb-net-cdc-mbim \  
-        kmod-usb-net-cdc-ncm \  
-        kmod-usb-net-cdc-subset \  
-        kmod-usb-net-dm9601-ether \  
-        kmod-usb-net-hso \  
-        kmod-usb-net-ipheth \  
-        kmod-usb-net-kalmia \  
-        kmod-usb-net-kaweth \  
-        kmod-usb-net-mcs7830 \  
-        kmod-usb-net-pegasus \  
-        kmod-usb-net-qmi-wwan \  
-        kmod-usb-net-sierrawireless \  
-        kmod-usb-net-smsc95xx \  
-        kmod-usb-net-rndis \  
-        umbim    
+    kmod-usb-net-cdc-eem \  
+    kmod-usb-net-cdc-ether \  
+    kmod-usb-net-cdc-mbim \  
+    kmod-usb-net-cdc-ncm \  
+    kmod-usb-net-cdc-subset \  
+    kmod-usb-net-dm9601-ether \  
+    kmod-usb-net-hso \  
+    kmod-usb-net-ipheth \  
+    kmod-usb-net-kalmia \  
+    kmod-usb-net-kaweth \  
+    kmod-usb-net-mcs7830 \  
+    kmod-usb-net-pegasus \  
+    kmod-usb-net-qmi-wwan \  
+    kmod-usb-net-sierrawireless \  
+    kmod-usb-net-smsc95xx \  
+    kmod-usb-net-rndis \  
+    umbim    
 
 Весьма вероятно, что не вся пачка нужна.
 Надо бы потестить, что из этого потенциально не нужно
@@ -570,8 +570,8 @@ ar7240> httpd
 lte-модем **HUAWEI 827F**, прошитый в hilink (режим ndis) подключился так:
 
 	opkg install \
-	        usb-modeswitch \
-	        kmod-usb-net-cdc-ether
+	usb-modeswitch \
+	kmod-usb-net-cdc-ether
 
 ***usb-modeswitch** в openwrt_22 называется по-другом*
 
@@ -581,18 +581,18 @@ lte-модем **HUAWEI 827F**, прошитый в hilink (режим ndis) п�
 
 модем **ZTE MF823D**, прошитый в hilink (режим ndis) подключился так
 
-	opkg install \
-    	usb-modeswitch \
-    	kmod-usb-net-rndis \
-    	kmod-usb-acm \
-    	kmod-usb-core \
-    	kmod-usb-ohci \
-    	kmod-usb-serial \
-    	comgt \
-    	kmod-usb-serial-option \
-    	kmod-usb-storage \
-    	kmod-usb-uhci \
-    	kmod-usb2
+    opkg install \
+    usb-modeswitch \
+    kmod-usb-net-rndis \
+    kmod-usb-acm \
+    kmod-usb-core \
+    kmod-usb-ohci \
+    kmod-usb-serial \
+    comgt \
+    kmod-usb-serial-option \
+    kmod-usb-storage \
+    kmod-usb-uhci \
+    kmod-usb2
 
 ***usb-modeswitch** в openwrt_22 называется по-другом*
 
@@ -691,6 +691,37 @@ lte-модем **HUAWEI 827F**, прошитый в hilink (режим ndis) п�
 Все. го в ребут   
 
     reboot
+
+
+Добавим Swap
+------------
+
+проаллоцируем место под свап
+
+    dd if=/dev/zero of=/swapfile1 bs=1M count=1000
+
+форматируем файл как блочник своп
+
+    mkswap /swapfile1
+
+добавим в fstab
+
+    uci -q delete fstab.swap1
+    uci set fstab.swap1="mount"
+    uci set fstab.swap1.device="/swapfile1"
+    uci set fstab.swap1.target="swap"
+    uci commit fstab
+
+или руками
+
+    config mount 'swap1'
+        option device '/swapfile1'
+        option target 'swap'
+
+
+и получаем `failed to swapon /swapfile1`
+
+Хрен знает почему. буду потом.
 
 
 OpenWRT + MWAN3 = несколько провайдеров.
@@ -829,6 +860,18 @@ OpenWRT + MWAN3 = несколько провайдеров.
 После этого ppp стал чотко понимать, что туннель подох - ставил его на авторестарт, рестартовал, когда в проводах вновь появлялся тырнет.
 
 Короч, заработало авторекавери*
+
+
+
+
+Docker
+---------
+
+Если скомпилили с softFPU - пробуем установить докер
+
+    opkg install docker dockerd docker-compose
+    /etc/init.d/dockerd enable
+
 
 
 
