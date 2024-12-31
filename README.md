@@ -273,7 +273,7 @@ flashrom после записи проверяет, правильно ли о�
 	gettext git java-propose-classpath libelf-dev libncurses5-dev \
 	libncursesw5-dev libssl-dev python python2.7-dev python3 unzip wget \
 	python3-distutils python3-setuptools rsync subversion swig time \
-	xsltproc zlib1g-dev libcap-dev llvm-12-dev clang-12
+	xsltproc zlib1g-dev libcap-dev llvm-12-dev clang-12 
 
 
 это нужно сделать чтобы сработала проверка на qosify в openwrt-22
@@ -355,7 +355,7 @@ flashrom после записи проверяет, правильно ли о�
 стало 0x20000 + 0x7d0000 + 0x800000 = 0xff0000 
 
 **меняем размер раздела firmware с 0x7d0000 на 0xfd0000  
-начало art с 0xff0000 на 0xff0000**
+начало art с 0x7f0000 на 0xff0000**
 
 таким образом art у нас закончится по адресу 0x1000000
 что равно 16 777 216 байтам = 16Мб
