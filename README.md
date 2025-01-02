@@ -303,10 +303,9 @@ flashrom после записи проверяет, правильно ли о�
 тянем с гита сырцы
 -------------------
 на момент работы над статьей, актуальная openWRT была 19.07
-
-	git clone https://github.com/openwrt/openwrt/
-        git checkout openwrt-19.07         
-	cd openwrt
+    git clone https://github.com/openwrt/openwrt/  
+    git checkout openwrt-19.07           
+    cd openwrt  
 
 Версию ветки, на какую сделать checkout можете посмотреть через git __branch -r__
 
