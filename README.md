@@ -402,12 +402,8 @@ UPD: на версиях 22.03.7 (final 22) и 23.05.5 (final 23) у luCI как
 **Global build settings --> Select all userspace packages by default**
 
 
-
-**ставим таргет  - tplink 4300 v1**
-**UPD: в 21 версии oWRT можно указать multiple targets и в пункте ниже этого выбрать какие таргеты собирать - к примеру, сразу и 3600 и 4300**
-
-	make menuconfig
-
+**ставим таргет  - tplink 4300 v1**  
+UPD: в 21 версии oWRT можно указать multiple targets и в пункте ниже этого выбрать какие таргеты собирать - к примеру, сразу и 3600 и 4300
 
 **конфигуряем сборку**
 
