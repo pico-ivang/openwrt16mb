@@ -434,6 +434,10 @@ Run this from usual user
 
 супер.
 
+**Если не получилось, то попробуйте так:**
+    make clean  
+    rm bin tmp  
+    make defconfig
 
 **можно сцедить diff**
 	
