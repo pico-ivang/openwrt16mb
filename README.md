@@ -437,7 +437,7 @@ Run this from usual user
 **Если не получилось, то попробуйте так:**  
 
         make clean    
-        rm bin tmp    
+        rm -rf bin tmp  
         make defconfig  
   
 **можно сцедить diff**
