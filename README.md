@@ -434,11 +434,11 @@ Run this from usual user
 
 супер.
 
-**Если не получилось, то попробуйте так:**
-    make clean  
-    rm bin tmp  
-    make defconfig
-
+**Если не получилось, то попробуйте так:**  
+    make clean    
+    rm bin tmp    
+    make defconfig  
+  
 **можно сцедить diff**
 	
 	scripts/diffconfig.sh > mydiffconfig (save your changes in the text file mydiffconfig).
